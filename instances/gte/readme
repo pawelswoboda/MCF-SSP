@@ -1,0 +1,16 @@
+This directory contains a number of files of the form gte_bad.XXXXXX
+
+These files are instances of a minimum-cost flow problem on a
+particular 49 node graph.  The instances differ in the choice of
+capacities and demands.  We ran these problems using the RELAXT-III
+code of Bertsekas and Tseng.  The interesting thing that happened was
+the running times varied greatly.  A file with the name gte_bad.XXXX
+represents a graph which took XXXX milliseconds.  These seems to be
+bad examples for the RELAXT-III code, it would be interesting to see
+how other minimum-cost flow code performed on these problems.
+
+These problems came about as subproblems in the multicommodity flow
+code of Leong, Shor, and Stein.
+
+--Cliff Stein (cliff@theory.lcs.mit.edu)
+
