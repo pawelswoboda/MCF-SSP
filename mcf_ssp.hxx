@@ -38,7 +38,7 @@ public:
 	EdgeId add_edge(NodeId i, NodeId j, FlowType lower, FlowType upper, CostType cost);
 
 	CostType solve();
-  CostType objective();
+  CostType objective() const;
 
 	///////////////////////////////////////////////////
 
@@ -47,7 +47,7 @@ public:
 	FlowType GetReverseRCap(EdgeId e);
 	void SetReverseRCap(EdgeId e, FlowType new_rcap);
 	void PushFlow(EdgeId e, FlowType delta);
-	void UpdateCost(EdgeId e, FlowType cap_orig, CostType delta);
+	void update_cost(EdgeId e, FlowType cap_orig, CostType delta);
 
   // query functions
   // reorder arcs so that outgoing ones from given node are ordered consecutively
@@ -57,7 +57,9 @@ public:
   CostType cost(const EdgeId e) const { assert(e >= 0 && e < 2*edgeNum); return arcs[e].cost; }
   NodeId tail(EdgeId e) const { return arcs[e].sister->head - nodes; }
   NodeId head(EdgeId e) const { return arcs[e].head - nodes; }
-  std::size_t no_edges(NodeId i) const;
+  std::size_t no_outgoing_arcs(NodeId i) const;
+	EdgeId first_outgoing_arc(NodeId i) const;
+
 
 
 	bool TestOptimality() const;
@@ -182,15 +184,26 @@ template <typename FlowType, typename CostType>
 }
 
 template <typename FlowType, typename CostType> 
-	inline std::size_t SSP<FlowType, CostType>::no_edges(NodeId i) const
+	inline std::size_t SSP<FlowType, CostType>::outgoing_arcs(NodeId i) const
 {
-  assert(false); // firstSaturated and firstNonsaturated are not necessarily ordered lists w.r.t. head node!
-  assert(i < nodeNum);
-  if(i < nodeNum-1) {
-    return nodes[i+1].first() - nodes[i].first();
-  } else { 
-    return arcs+2*edgeNum - nodes[i].first();
+  std::size_t n;
+  for (a=nodes[i].firstSaturated; a; a=a->next) { ++n; }
+  for (a=nodes[i].firstNonsaturated; a; a=a->next) { ++n; }
+  return n;
+}
+
+// only makes sense if arcs have been ordered
+template <typename FlowType, typename CostType> 
+	inline EdgeId SSP<FlowType, CostType>::first_outgoing_arc(NodeId i) const
+{
+  EdgeId e = std::numeric_limits<EdgeId>::max;
+  for (a=nodes[i].firstSaturated; a; a=a->next) { 
+    e = std::min(e, a-arcs);
   }
+  for (a=nodes[i].firstNonsaturated; a; a=a->next) { 
+    e = std::min(e, a-arcs);
+  }
+  return e;
 }
 
 template <typename FlowType, typename CostType> 
@@ -388,10 +401,10 @@ template <typename FlowType, typename CostType>
 }
 
 template <typename FlowType, typename CostType> 
-	inline void SSP<FlowType, CostType>::UpdateCost(EdgeId e, FlowType cap_orig, CostType delta)
+	inline void SSP<FlowType, CostType>::update_cost(EdgeId e, CostType delta)
 {
-	Arc* a = &arcs[2*e];
-	mcf_cost += delta*(cap_orig-a->r_cap);
+	Arc* a = &arcs[e];
+	mcf_cost += delta*(capacity[e]-a->r_cap);
 	a->cost += delta;
 	a->sister->cost = -a->cost;
 
@@ -837,7 +850,7 @@ inline CostType SSP<FlowType, CostType>::solve()
 }
 
 template <typename FlowType, typename CostType> 
-inline CostType SSP<FlowType, CostType>::objective()
+inline CostType SSP<FlowType, CostType>::objective() const
 {
   CostType c = 0.0;
   for(EdgeId a=0; a<2*edgeNum; ++a) {
