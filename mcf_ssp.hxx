@@ -55,7 +55,7 @@ public:
   FlowType flow(const NodeId i, const EdgeId e) const; // get the flow of the e-th edge outgoing out of i
   FlowType flow(const EdgeId e) const; // get the flow of the e-th edge outgoing out of i
   CostType cost(const EdgeId e) const { assert(e >= 0 && e < 2*edgeNum); return arcs[e].cost; }
-  CostType residual_cost(const EdgeId e) const { assert(e >= 0 && e < 2*edgeNum); return arcs[e].GetRCost(); }
+  CostType reduced_cost(const EdgeId e) const { assert(e >= 0 && e < 2*edgeNum); return arcs[e].GetRCost(); }
   CostType residual_capacity(const EdgeId e) const { assert(e >= 0 && e < 2*edgeNum); return arcs[e].r_cap; }
   NodeId tail(EdgeId e) const { return arcs[e].sister->head - nodes; }
   NodeId head(EdgeId e) const { return arcs[e].head - nodes; }
