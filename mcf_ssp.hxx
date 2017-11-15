@@ -47,7 +47,7 @@ public:
 	FlowType GetReverseRCap(EdgeId e);
 	void SetReverseRCap(EdgeId e, FlowType new_rcap);
 	void PushFlow(EdgeId e, FlowType delta);
-	void update_cost(EdgeId e, FlowType cap_orig, CostType delta);
+	void update_cost(EdgeId e, CostType delta);
 
   // query functions
   // reorder arcs so that outgoing ones from given node are ordered consecutively
@@ -55,6 +55,8 @@ public:
   FlowType flow(const NodeId i, const EdgeId e) const; // get the flow of the e-th edge outgoing out of i
   FlowType flow(const EdgeId e) const; // get the flow of the e-th edge outgoing out of i
   CostType cost(const EdgeId e) const { assert(e >= 0 && e < 2*edgeNum); return arcs[e].cost; }
+  CostType residual_cost(const EdgeId e) const { assert(e >= 0 && e < 2*edgeNum); return arcs[e].GetRCost(); }
+  CostType residual_capacity(const EdgeId e) const { assert(e >= 0 && e < 2*edgeNum); return arcs[e].r_cap; }
   NodeId tail(EdgeId e) const { return arcs[e].sister->head - nodes; }
   NodeId head(EdgeId e) const { return arcs[e].head - nodes; }
   std::size_t no_outgoing_arcs(NodeId i) const;
@@ -184,24 +186,24 @@ template <typename FlowType, typename CostType>
 }
 
 template <typename FlowType, typename CostType> 
-	inline std::size_t SSP<FlowType, CostType>::outgoing_arcs(NodeId i) const
+	inline std::size_t SSP<FlowType, CostType>::no_outgoing_arcs(NodeId i) const
 {
-  std::size_t n;
-  for (a=nodes[i].firstSaturated; a; a=a->next) { ++n; }
-  for (a=nodes[i].firstNonsaturated; a; a=a->next) { ++n; }
+  std::size_t n = 0;
+  for (Arc* a=nodes[i].firstSaturated; a; a=a->next) { ++n; }
+  for (Arc* a=nodes[i].firstNonsaturated; a; a=a->next) { ++n; }
   return n;
 }
 
 // only makes sense if arcs have been ordered
 template <typename FlowType, typename CostType> 
-	inline EdgeId SSP<FlowType, CostType>::first_outgoing_arc(NodeId i) const
+	inline typename SSP<FlowType, CostType>::EdgeId SSP<FlowType, CostType>::first_outgoing_arc(NodeId i) const
 {
-  EdgeId e = std::numeric_limits<EdgeId>::max;
-  for (a=nodes[i].firstSaturated; a; a=a->next) { 
-    e = std::min(e, a-arcs);
+  EdgeId e = std::numeric_limits<EdgeId>::max();
+  for (Arc* a=nodes[i].firstSaturated; a; a=a->next) { 
+    e = std::min(e, EdgeId(a-arcs));
   }
-  for (a=nodes[i].firstNonsaturated; a; a=a->next) { 
-    e = std::min(e, a-arcs);
+  for (Arc* a=nodes[i].firstNonsaturated; a; a=a->next) { 
+    e = std::min(e, EdgeId(a-arcs));
   }
   return e;
 }
