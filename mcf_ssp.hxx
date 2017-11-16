@@ -80,7 +80,6 @@ private:
 	{
 		Arc			*firstNonsaturated;
 		Arc			*firstSaturated;
-    Arc* first() const { return std::min(firstNonsaturated, firstSaturated); }
 
 		Arc			*parent;
 		Node		*next; // list of nodes with positive excesses
@@ -155,6 +154,7 @@ private:
 	FlowType Augment(Node* start, Node* end);
 	void Dijkstra(Node* start);
 
+  bool node_valid(NodeId i) const;
   bool arc_valid(Arc* a) const;
   void exchange(Arc* const a, Arc* const b);
 
@@ -179,6 +179,7 @@ template <typename FlowType, typename CostType>
 template <typename FlowType, typename CostType> 
 	inline FlowType SSP<FlowType, CostType>::flow(NodeId _i, EdgeId _e) const
 {
+  assert(false);
   EdgeId e = (nodes[_i].first() + _e) - arcs;
   return flow(e);
 }
@@ -186,6 +187,7 @@ template <typename FlowType, typename CostType>
 template <typename FlowType, typename CostType> 
 	inline std::size_t SSP<FlowType, CostType>::no_outgoing_arcs(NodeId i) const
 {
+  assert(node_valid(i));
   std::size_t n = 0;
   for (Arc* a=nodes[i].firstSaturated; a; a=a->next) { ++n; }
   for (Arc* a=nodes[i].firstNonsaturated; a; a=a->next) { ++n; }
@@ -196,6 +198,7 @@ template <typename FlowType, typename CostType>
 template <typename FlowType, typename CostType> 
 	inline typename SSP<FlowType, CostType>::EdgeId SSP<FlowType, CostType>::first_outgoing_arc(NodeId i) const
 {
+  assert(node_valid(i));
   EdgeId e = std::numeric_limits<EdgeId>::max();
   for (Arc* a=nodes[i].firstSaturated; a; a=a->next) { 
     e = std::min(e, EdgeId(a-arcs));
@@ -640,6 +643,21 @@ template <typename FlowType, typename CostType>
 		}
 
 	}
+}
+
+template <typename FlowType, typename CostType> 
+	inline bool SSP<FlowType, CostType>::node_valid(NodeId i) const
+{
+	if(i < 0 || i >= nodeNum) { return false; }
+  if(nodes[i].firstSaturated != nullptr) {
+    if(nodes[i].firstSaturated < arcs) { return false; }
+    if(nodes[i].firstSaturated - arcs >= 2*edgeNum) { return false; }
+  }
+  if(nodes[i].firstNonsaturated != nullptr) {
+    if(nodes[i].firstNonsaturated < arcs) { return false; }
+    if(nodes[i].firstNonsaturated - arcs >= 2*edgeNum) { return false; }
+  }
+  return true;
 }
 
 template <typename FlowType, typename CostType> 
