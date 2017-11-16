@@ -29,6 +29,8 @@ public:
   SSP(const SSP& o);
   SSP(SSP&& o);
 
+	void copy_node(const SSP& o, NodeId i);
+	void copy_arc(const SSP& o, EdgeId i);
 
 	// Destructor
 	~SSP();
@@ -533,22 +535,56 @@ template <typename FlowType, typename CostType>
 }
 
 template <typename FlowType, typename CostType> 
+	inline void SSP<FlowType, CostType>::copy_node(const SSP& o, NodeId i)
+{
+  if(o.nodes[i].firstNonsaturated != nullptr) { nodes[i].firstNonsaturated = arcs + (o.nodes[i].firstNonsaturated - o.arcs); }
+  else { nodes[i].firstNonsaturated = nullptr; }
+  if(o.nodes[i].firstSaturated != nullptr) { nodes[i].firstSaturated = arcs + (o.nodes[i].firstSaturated - o.arcs); }
+  else { nodes[i].firstSaturated = nullptr; }
+  if(o.nodes[i].parent != nullptr) { nodes[i].parent = arcs + o.nodes[i].parent - o.arcs; }
+  else { nodes[i].parent = nullptr; }
+  if(o.nodes[i].next != nullptr) { nodes[i].parent = nodes + o.nodes[i].parent - o.nodes; }
+  else { nodes[i].next = nullptr; }
+
+  nodes[i].excess = o.nodes[i].excess;
+  nodes[i].pi = o.nodes[i].pi;
+  nodes[i].flag = o.nodes[i].flag;
+}
+
+template <typename FlowType, typename CostType> 
+	inline void SSP<FlowType, CostType>::copy_arc(const SSP& o, EdgeId i)
+{
+  arcs[i].head = arcs + (o.arcs[i].head - o.arcs);
+  arcs[i].sister = arcs + (o.arcs[i].sister - o.arcs);
+
+  if(o.arcs[i].next != nullptr) { arcs[i].next = arcs + (o.arcs[i].next - o.arcs); }
+  else { arcs[i].next = nullptr; }
+  if(o.arcs[i].prev != nullptr) { arcs[i].prev = arcs + (o.arcs[i].prev - o.arcs); }
+  else { arcs[i].prev = nullptr; }
+
+  arcs[i].r_cap = o.arcs[i].r_cap;
+  arcs[i].cost = o.arcs[i].cost;
+
+  capacity[i] = o.capacity[i];
+}
+
+template <typename FlowType, typename CostType> 
 	inline SSP<FlowType, CostType>::SSP(const SSP& o)
 	: nodeNum(o.nodeNum),
 	  edgeNum(o.edgeNum),
 	  edgeNumMax(o.edgeNumMax),
 	  counter(o.counter),
-	  mcf_cost(o.mcf_cost),
-    firstActive(o.firstActive)
+	  mcf_cost(o.mcf_cost)
 {
 	nodes = (Node*) malloc(nodeNum*sizeof(Node));
 	arcs = (Arc*) malloc(2*edgeNumMax*sizeof(Arc));
   capacity = (FlowType*) malloc(2*edgeNumMax*sizeof(FlowType));
 	if (!nodes || !arcs || !capacity) { throw std::bad_alloc(); }
 
-  std::copy(o.nodes, o.nodes+nodeNum, nodes);
-  std::copy(o.arcs, o.arcs+2*edgeNum, arcs);
-  std::copy(o.capacity, o.capacity+2*edgeNum, capacity);
+  for(NodeId i=0; i<nodeNum; ++i) { copy_node(o,i); }
+  for(EdgeId i=0; i<2*edgeNum; ++i) { copy_arc(o.i); }
+
+	firstActive = &nodes[nodeNum];
 }
 
 template <typename FlowType, typename CostType> 
