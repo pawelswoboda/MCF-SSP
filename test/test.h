@@ -8,9 +8,10 @@ inline void test(const bool& pred)
     throw std::runtime_error("Test failed.");
 }
 
+template<typename CostType>
 void test_instance(const std::string& filename, const long mcf_cost)
 {
-  auto* f = MCF::read_dimacs_file<int,long>(filename);
+  auto* f = MCF::read_dimacs_file<int,CostType>(filename);
   f->order();
   auto objective = f->solve();
   std::cout << "objective value = " << objective << "\n";

@@ -161,9 +161,7 @@ private:
   void order_inter_nodes(); // reorder arcs so that the outgoing ones from each node are ordered consecutively.
   void order_intra_nodes(); // reorder arcs outgoing from each node by head node id
 
-#ifdef SSP_DEBUG
-	void TestCosts();
-#endif
+	bool TestCosts();
 };
 
 
@@ -844,9 +842,8 @@ inline CostType SSP<FlowType, CostType>::solve()
 			}
 		}
 	}
-#ifdef SSP_DEBUG
-	TestCosts();
-#endif
+
+	assert(TestCosts());
 
 	return mcf_cost;
 }
@@ -892,30 +889,24 @@ template <typename FlowType, typename CostType>
   return true;
 }
 
-#ifdef SSP_DEBUG
-
 template <typename FlowType, typename CostType> 
-	void SSP<FlowType, CostType>::TestCosts()
+	bool SSP<FlowType, CostType>::TestCosts()
 {
-	Arc* a;
-
 	CostType _cost = 0;
 
-	for (a=arcs; a<arcs+2*edgeNum; a+=2)
+	for (Arc* a=arcs; a<arcs+2*edgeNum; ++a)
 	{
-		assert(a->r_cap + a->sister->r_cap == a->cap_orig + a->sister->cap_orig);
-		_cost += a->cost*(a->cap_orig - a->r_cap);
+    if(a->r_cap + a->sister->r_cap != capacity[a-arcs] + capacity[a->sister-arcs]) {
+      return false;
+    }
 	}
 
-	CostType delta = mcf_cost - _cost;
-	if (delta < 0) delta = -delta;
-	if (delta >= 1e-5)
-	{
-		assert(0);
-	}
+  if(std::abs(objective() - mcf_cost) > 1e-8) {
+    return false;
+  }
+
+  return true;
 }
-
-#endif
 
 template<typename FlowType, typename CostType>
 void SSP<FlowType, CostType>::print_flow() const

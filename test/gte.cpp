@@ -8,7 +8,8 @@ int main()
 {
   for(auto e : gte) {
     std::cout << "testing " << e.file << "\n";
-    test_instance(e.file, e.objective);
+    test_instance<long>(e.file, e.objective);
+    test_instance<double>(e.file, e.objective);
   }
 }
 
