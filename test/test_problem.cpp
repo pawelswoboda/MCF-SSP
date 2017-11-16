@@ -92,6 +92,3 @@ int main()
    test(mcf.reduced_cost(12) <= 0);
    test(mcf.reduced_cost(13) == 0);
 }
-
-
-

@@ -12,5 +12,3 @@ int main()
     test_instance<double>(e.file, e.objective);
   }
 }
-
-

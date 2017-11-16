@@ -21,6 +21,8 @@ before_install:
 script:
   - cmake .
   - make
+  - ./test/arc_layout
+  - ./test/test_problem
   - ./test/assignment_problem
   - ./test/gte
 

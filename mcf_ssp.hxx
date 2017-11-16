@@ -25,7 +25,10 @@ public:
 	typedef std::size_t NodeId;
 	typedef std::size_t EdgeId;
 
-	SSP(std::size_t NodeNum, std::size_t edgeNumMax, void (*err_function)(const char *) = nullptr);
+	SSP(std::size_t NodeNum, std::size_t edgeNumMax);
+  SSP(const SSP& o);
+  SSP(SSP&& o);
+
 
 	// Destructor
 	~SSP();
@@ -35,6 +38,7 @@ public:
 	// first call returns 0, second 1, and so on.
 	// cap, rev_cap must be non-negative. 
 	// cost can be negative.
+  // EdgeIds only stay unchanged when arcs are not reordered
 	EdgeId add_edge(NodeId i, NodeId j, FlowType lower, FlowType upper, CostType cost);
 
 	CostType solve();
@@ -49,9 +53,8 @@ public:
 	void PushFlow(EdgeId e, FlowType delta);
 	void update_cost(EdgeId e, CostType delta);
 
-  // query functions
-  // reorder arcs so that outgoing ones from given node are ordered consecutively
-  void order() { order_inter_nodes(); order_intra_nodes(); }
+  // query functions 
+  void order() { order_inter_nodes(); order_intra_nodes(); } // reorder arcs so that outgoing ones from given node are ordered consecutively
   FlowType flow(const NodeId i, const EdgeId e) const; // get the flow of the e-th edge outgoing out of i
   FlowType flow(const EdgeId e) const; // get the flow of the e-th edge outgoing out of i
   CostType cost(const EdgeId e) const { assert(e >= 0 && e < 2*edgeNum); return arcs[e].cost; }
@@ -59,13 +62,14 @@ public:
   CostType residual_capacity(const EdgeId e) const { assert(e >= 0 && e < 2*edgeNum); return arcs[e].r_cap; }
   NodeId tail(EdgeId e) const { return arcs[e].sister->head - nodes; }
   NodeId head(EdgeId e) const { return arcs[e].head - nodes; }
-  std::size_t no_outgoing_arcs(NodeId i) const;
 	EdgeId first_outgoing_arc(NodeId i) const;
+  std::size_t no_outgoing_arcs(NodeId i) const;
 
-
-
-	bool TestOptimality() const;
+  // debug functions
+	bool TestOptimality() const; 
+	bool TestCosts() const;
   void print_flow() const;
+
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
@@ -92,9 +96,6 @@ private:
       std::size_t		heap_ptr;
 			Node*	next_permanent;
 		};
-#ifdef SSP_DEBUG
-    std::size_t			id;
-#endif
 	};
 
 	struct Arc
@@ -160,8 +161,6 @@ private:
 
   void order_inter_nodes(); // reorder arcs so that the outgoing ones from each node are ordered consecutively.
   void order_intra_nodes(); // reorder arcs outgoing from each node by head node id
-
-	bool TestCosts();
 };
 
 
@@ -277,6 +276,8 @@ template <typename FlowType, typename CostType>
 	a_rev -> r_cap = -lower;
 	a -> cost = cost;
 	a_rev -> cost = -cost;
+
+  assert(arc_valid(a) && arc_valid(a_rev));
 
 	if (a->r_cap > 0 && a->GetRCost() < 0) PushFlow(a, a->r_cap);
 	if (a_rev->r_cap > 0 && a_rev->GetRCost() < 0) PushFlow(a_rev, a_rev->r_cap);
@@ -514,7 +515,7 @@ template <typename FlowType, typename CostType>
 }
 
 template <typename FlowType, typename CostType> 
-	inline SSP<FlowType, CostType>::SSP(std::size_t _nodeNum, std::size_t _edgeNumMax, void (*err_function)(const char *))
+	inline SSP<FlowType, CostType>::SSP(std::size_t _nodeNum, std::size_t _edgeNumMax)
 	: nodeNum(_nodeNum),
 	  edgeNum(0),
 	  edgeNumMax(_edgeNumMax),
@@ -532,11 +533,44 @@ template <typename FlowType, typename CostType>
 }
 
 template <typename FlowType, typename CostType> 
+	inline SSP<FlowType, CostType>::SSP(const SSP& o)
+	: nodeNum(o._nodeNum),
+	  edgeNum(o.edgeNum),
+	  edgeNumMax(o._edgeNumMax),
+	  counter(o.counter),
+	  mcf_cost(o.mcf_cost),
+    firstActive(firstActive)
+{
+	nodes = (Node*) malloc(nodeNum*sizeof(Node));
+	arcs = (Arc*) malloc(2*edgeNumMax*sizeof(Arc));
+  capacity = (FlowType*) malloc(2*edgeNumMax*sizeof(FlowType));
+	if (!nodes || !arcs || !capacity) { throw std::bad_alloc(); }
+
+  std::copy(o.nodes, o.nodes+nodeNum, nodes);
+  std::copy(o.arcs, o.arcs+2*edgeNum, arcs);
+  std::copy(o.capacity, o.capacity+2*edgeNum, capacity);
+}
+
+template <typename FlowType, typename CostType> 
+	inline SSP<FlowType, CostType>::SSP(SSP&& o)
+	: nodeNum(o._nodeNum),
+	  edgeNum(o.edgeNum),
+	  edgeNumMax(o._edgeNumMax),
+	  counter(o.counter),
+	  mcf_cost(o.mcf_cost),
+    firstActive(o.firstActive)
+{
+  std::swap(nodes, o.nodes);
+  std::swap(arcs, o.arcs);
+  std::swap(capacity, o.capacity);
+}
+
+template <typename FlowType, typename CostType> 
 	inline SSP<FlowType, CostType>::~SSP()
 {
-  free(nodes);
-  free(arcs);
-  free(capacity);
+  if(nodes != nullptr) free(nodes);
+  if(arcs != nullptr) free(arcs);
+  if(capacity != nullptr) free(capacity);
 }
 
 template <typename FlowType, typename CostType> 
@@ -650,12 +684,12 @@ template <typename FlowType, typename CostType>
 {
 	if(i < 0 || i >= nodeNum) { return false; }
   if(nodes[i].firstSaturated != nullptr) {
-    if(nodes[i].firstSaturated < arcs) { return false; }
-    if(nodes[i].firstSaturated - arcs >= 2*edgeNum) { return false; }
+  if(nodes[i].firstSaturated < arcs) { return false; }
+  if(nodes[i].firstSaturated - arcs >= 2*edgeNum) { return false; }
   }
   if(nodes[i].firstNonsaturated != nullptr) {
-    if(nodes[i].firstNonsaturated < arcs) { return false; }
-    if(nodes[i].firstNonsaturated - arcs >= 2*edgeNum) { return false; }
+  if(nodes[i].firstNonsaturated < arcs) { return false; }
+  if(nodes[i].firstNonsaturated - arcs >= 2*edgeNum) { return false; }
   }
   return true;
 }
@@ -663,6 +697,9 @@ template <typename FlowType, typename CostType>
 template <typename FlowType, typename CostType> 
 	inline bool SSP<FlowType, CostType>::arc_valid(Arc* a) const
 {
+  if(a < arcs || a >= arcs+2*edgeNum) { return false; }
+  if(!node_valid(tail(a-arcs))) { return false; }
+  if(!node_valid(head(a-arcs))) { return false; }
   if(a->prev == a) { return false; }
   if(a->next == a) { return false; }
   if(a->sister->sister != a) { return false; }
@@ -862,7 +899,9 @@ inline CostType SSP<FlowType, CostType>::solve()
 	}
 
 	assert(TestCosts());
+  assert(TestOptimality());
 
+  for(EdgeId e=0; e<2*edgeNum; ++e) { assert(arc_valid(&arcs[e])); }
 	return mcf_cost;
 }
 
@@ -908,7 +947,7 @@ template <typename FlowType, typename CostType>
 }
 
 template <typename FlowType, typename CostType> 
-	bool SSP<FlowType, CostType>::TestCosts()
+	bool SSP<FlowType, CostType>::TestCosts() const
 {
 	CostType _cost = 0;
 
@@ -999,4 +1038,3 @@ SSP<FLOW_TYPE,COST_TYPE>* read_dimacs_file(const std::string& filename)
 } // namespace MCF
 
 #endif // MCF_SSP_HXX
-
