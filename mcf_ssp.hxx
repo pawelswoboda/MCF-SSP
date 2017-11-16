@@ -534,12 +534,12 @@ template <typename FlowType, typename CostType>
 
 template <typename FlowType, typename CostType> 
 	inline SSP<FlowType, CostType>::SSP(const SSP& o)
-	: nodeNum(o._nodeNum),
+	: nodeNum(o.nodeNum),
 	  edgeNum(o.edgeNum),
-	  edgeNumMax(o._edgeNumMax),
+	  edgeNumMax(o.edgeNumMax),
 	  counter(o.counter),
 	  mcf_cost(o.mcf_cost),
-    firstActive(firstActive)
+    firstActive(o.firstActive)
 {
 	nodes = (Node*) malloc(nodeNum*sizeof(Node));
 	arcs = (Arc*) malloc(2*edgeNumMax*sizeof(Arc));
@@ -553,9 +553,9 @@ template <typename FlowType, typename CostType>
 
 template <typename FlowType, typename CostType> 
 	inline SSP<FlowType, CostType>::SSP(SSP&& o)
-	: nodeNum(o._nodeNum),
+	: nodeNum(o.nodeNum),
 	  edgeNum(o.edgeNum),
-	  edgeNumMax(o._edgeNumMax),
+	  edgeNumMax(o.edgeNumMax),
 	  counter(o.counter),
 	  mcf_cost(o.mcf_cost),
     firstActive(o.firstActive)
