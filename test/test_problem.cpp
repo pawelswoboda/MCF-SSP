@@ -21,6 +21,10 @@ int main()
    mcf.add_node_excess( 5, -10);
 
    mcf.order();
+
+   // test copy constructor
+   SSP<long,long> mcf2(mcf);
+
    auto obj = mcf.solve();
    test(obj == 70);
    // after solving, arcs are reordered lexicographically. Note that reverse arc is implicitly added by add_edge as well.
@@ -91,4 +95,10 @@ int main()
    test(mcf.reduced_cost(10) <= 0);
    test(mcf.reduced_cost(12) <= 0);
    test(mcf.reduced_cost(13) == 0);
+
+
+   mcf2.order();
+   mcf2.print_flow();
+   mcf2.solve();
+   test(mcf2.objective() == mcf.objective());
 }

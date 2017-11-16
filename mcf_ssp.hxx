@@ -541,9 +541,9 @@ template <typename FlowType, typename CostType>
   else { nodes[i].firstNonsaturated = nullptr; }
   if(o.nodes[i].firstSaturated != nullptr) { nodes[i].firstSaturated = arcs + (o.nodes[i].firstSaturated - o.arcs); }
   else { nodes[i].firstSaturated = nullptr; }
-  if(o.nodes[i].parent != nullptr) { nodes[i].parent = arcs + o.nodes[i].parent - o.arcs; }
+  if(o.nodes[i].parent != nullptr) { nodes[i].parent = arcs + (o.nodes[i].parent - o.arcs); }
   else { nodes[i].parent = nullptr; }
-  if(o.nodes[i].next != nullptr) { nodes[i].parent = nodes + o.nodes[i].parent - o.nodes; }
+  if(o.nodes[i].next != nullptr) { nodes[i].next = nodes + (o.nodes[i].next - o.nodes); }
   else { nodes[i].next = nullptr; }
 
   nodes[i].excess = o.nodes[i].excess;
@@ -554,7 +554,7 @@ template <typename FlowType, typename CostType>
 template <typename FlowType, typename CostType> 
 	inline void SSP<FlowType, CostType>::copy_arc(const SSP& o, EdgeId i)
 {
-  arcs[i].head = arcs + (o.arcs[i].head - o.arcs);
+  arcs[i].head = nodes + (o.arcs[i].head - o.nodes);
   arcs[i].sister = arcs + (o.arcs[i].sister - o.arcs);
 
   if(o.arcs[i].next != nullptr) { arcs[i].next = arcs + (o.arcs[i].next - o.arcs); }
@@ -582,20 +582,21 @@ template <typename FlowType, typename CostType>
 	if (!nodes || !arcs || !capacity) { throw std::bad_alloc(); }
 
   for(NodeId i=0; i<nodeNum; ++i) { copy_node(o,i); }
-  for(EdgeId i=0; i<2*edgeNum; ++i) { copy_arc(o.i); }
+  for(EdgeId i=0; i<2*edgeNum; ++i) { copy_arc(o,i); }
 
-	firstActive = &nodes[nodeNum];
+	firstActive = nodes + (o.firstActive - o.nodes);
 }
 
 template <typename FlowType, typename CostType> 
 	inline SSP<FlowType, CostType>::SSP(SSP&& o)
-	: nodeNum(o.nodeNum),
-	  edgeNum(o.edgeNum),
-	  edgeNumMax(o.edgeNumMax),
-	  counter(o.counter),
-	  mcf_cost(o.mcf_cost),
-    firstActive(o.firstActive)
 {
+  std::swap(nodeNum,o.nodeNum);
+	std::swap( edgeNum,o.edgeNum);
+	std::swap(edgeNumMax,o.edgeNumMax);
+	std::swap(counter,o.counter);
+	std::swap(mcf_cost,o.mcf_cost);
+  std::swap(firstActive,o.firstActive);
+
   std::swap(nodes, o.nodes);
   std::swap(arcs, o.arcs);
   std::swap(capacity, o.capacity);
@@ -1006,7 +1007,7 @@ void SSP<FlowType, CostType>::print_flow() const
 {
   std::cout << "flow:\n";
   for(EdgeId e=0; e<2*edgeNum; ++e) {
-    std::cout << tail(e) << " -> " << head(e) << ": flow = " << flow(e) << "\n";
+    std::cout << tail(e) << " -> " << head(e) << ": flow = " << flow(e) << ", capacity = " << capacity[e] << ", cost = " << arcs[e].cost << "\n";
   }
 }
 
