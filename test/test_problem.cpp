@@ -96,9 +96,13 @@ int main()
    test(mcf.reduced_cost(12) <= 0);
    test(mcf.reduced_cost(13) == 0);
 
-
    mcf2.order();
    mcf2.print_flow();
    mcf2.solve();
-   test(mcf2.objective() == mcf.objective());
+   test(mcf2.objective() == obj);
+
+   SSP<long,long> mcf3;
+   mcf3 = std::move(mcf);
+   test(mcf3.objective() == obj);
+   test(mcf.objective() == 0);
 }

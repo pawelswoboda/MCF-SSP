@@ -25,9 +25,14 @@ public:
 	typedef std::size_t NodeId;
 	typedef std::size_t EdgeId;
 
+	SSP();
 	SSP(std::size_t NodeNum, std::size_t edgeNumMax);
   SSP(const SSP& o);
   SSP(SSP&& o);
+  SSP& operator=(SSP o);
+
+  template<typename _FlowType, typename _CostType>
+  friend void swap(SSP<_FlowType,_CostType>&,SSP<_FlowType,_CostType>&);
 
 	void copy_node(const SSP& o, NodeId i);
 	void copy_arc(const SSP& o, EdgeId i);
@@ -517,6 +522,18 @@ template <typename FlowType, typename CostType>
 }
 
 template <typename FlowType, typename CostType> 
+	inline SSP<FlowType, CostType>::SSP()
+	: nodeNum(0),
+	  edgeNum(0),
+	  edgeNumMax(0),
+	  counter(0),
+	  mcf_cost(0),
+    nodes(nullptr),
+    arcs(nullptr),
+    capacity(nullptr),
+    firstActive(nullptr)
+{}
+template <typename FlowType, typename CostType> 
 	inline SSP<FlowType, CostType>::SSP(std::size_t _nodeNum, std::size_t _edgeNumMax)
 	: nodeNum(_nodeNum),
 	  edgeNum(0),
@@ -588,18 +605,33 @@ template <typename FlowType, typename CostType>
 }
 
 template <typename FlowType, typename CostType> 
+	inline void swap(SSP<FlowType,CostType>& first, SSP<FlowType,CostType>& second)
+{
+  using std::swap;
+
+  std::swap(first.nodeNum, second.nodeNum);
+	std::swap(first.edgeNum, second.edgeNum);
+	std::swap(first.edgeNumMax, second.edgeNumMax);
+	std::swap(first.counter, second.counter);
+	std::swap(first.mcf_cost, second.mcf_cost);
+  std::swap(first.firstActive, second.firstActive);
+
+  std::swap(first.nodes, second.nodes);
+  std::swap(first.arcs, second.arcs);
+  std::swap(first.capacity, second.capacity);
+}
+
+template <typename FlowType, typename CostType> 
 	inline SSP<FlowType, CostType>::SSP(SSP&& o)
 {
-  std::swap(nodeNum,o.nodeNum);
-	std::swap( edgeNum,o.edgeNum);
-	std::swap(edgeNumMax,o.edgeNumMax);
-	std::swap(counter,o.counter);
-	std::swap(mcf_cost,o.mcf_cost);
-  std::swap(firstActive,o.firstActive);
+  swap(*this, o);
+} 
 
-  std::swap(nodes, o.nodes);
-  std::swap(arcs, o.arcs);
-  std::swap(capacity, o.capacity);
+template <typename FlowType, typename CostType> 
+	inline SSP<FlowType,CostType>& SSP<FlowType, CostType>::operator=(SSP<FlowType,CostType> o)
+{
+  swap(*this, o);
+  return *this;
 }
 
 template <typename FlowType, typename CostType> 
