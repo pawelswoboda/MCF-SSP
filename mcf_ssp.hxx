@@ -1,8 +1,8 @@
 #ifndef MCF_SSP_HXX
 #define MCF_SSP_HXX
 
-#include <string.h>
-#include <cstdlib> // remove later!
+#include <cmath>
+#include <cstring>
 #include <assert.h>
 
 #include <algorithm>
@@ -552,8 +552,8 @@ template <typename FlowType, typename CostType>
       (edgeNumMax > 0 && !capacity) )
   { throw std::bad_alloc(); }
 
-	memset(nodes, 0, nodeNum*sizeof(Node));
-	memset(arcs, 0, 2*edgeNumMax*sizeof(Arc));
+  std::memset(nodes, 0, nodeNum*sizeof(Node));
+  std::memset(arcs, 0, 2*edgeNumMax*sizeof(Arc));
 	firstActive = &nodes[nodeNum];
 }
 
