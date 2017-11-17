@@ -29,7 +29,8 @@ public:
 	SSP(std::size_t NodeNum, std::size_t edgeNumMax);
   SSP(const SSP& o);
   SSP(SSP&& o);
-  SSP& operator=(SSP o);
+  SSP& operator=(SSP& o);
+  SSP& operator=(SSP&& o);
 
   template<typename _FlowType, typename _CostType>
   friend void swap(SSP<_FlowType,_CostType>&,SSP<_FlowType,_CostType>&);
@@ -71,6 +72,8 @@ public:
   NodeId head(EdgeId e) const { return arcs[e].head - nodes; }
 	EdgeId first_outgoing_arc(NodeId i) const;
   std::size_t no_outgoing_arcs(NodeId i) const;
+  FlowType upper_bound(EdgeId i) const { assert(arc_valid(&arcs[i])); return capacity[i]; }
+  FlowType lower_bound(EdgeId i) const { assert(arc_valid(&arcs[i])); const EdgeId s = arcs[i].sister - arcs; assert(arc_valid(&arcs[s])); return capacity[s]; }
 
   // debug functions
 	bool TestOptimality() const; 
@@ -541,10 +544,13 @@ template <typename FlowType, typename CostType>
 	  counter(0),
 	  mcf_cost(0)
 {
-	nodes = (Node*) malloc(nodeNum*sizeof(Node));
-	arcs = (Arc*) malloc(2*edgeNumMax*sizeof(Arc));
-  capacity = (FlowType*) malloc(2*edgeNumMax*sizeof(FlowType));
-	if (!nodes || !arcs || !capacity) { throw std::bad_alloc(); }
+  if(nodeNum > 0) { nodes = (Node*) malloc(nodeNum*sizeof(Node)); }
+	if(edgeNumMax > 0) { arcs = (Arc*) malloc(2*edgeNumMax*sizeof(Arc)); }
+  if(edgeNumMax > 0) { capacity = (FlowType*) malloc(2*edgeNumMax*sizeof(FlowType)); }
+	if ((nodeNum > 0 && !nodes) || 
+      (edgeNumMax > 0 && !arcs) || 
+      (edgeNumMax > 0 && !capacity) )
+  { throw std::bad_alloc(); }
 
 	memset(nodes, 0, nodeNum*sizeof(Node));
 	memset(arcs, 0, 2*edgeNumMax*sizeof(Arc));
@@ -628,10 +634,18 @@ template <typename FlowType, typename CostType>
 } 
 
 template <typename FlowType, typename CostType> 
-	inline SSP<FlowType,CostType>& SSP<FlowType, CostType>::operator=(SSP<FlowType,CostType> o)
+	inline SSP<FlowType,CostType>& SSP<FlowType, CostType>::operator=(SSP<FlowType,CostType>& o)
+{
+  SSP<FlowType,CostType> o2(o);
+  swap(*this, o2);
+  return *this;
+}
+
+template <typename FlowType, typename CostType> 
+	inline SSP<FlowType,CostType>& SSP<FlowType, CostType>::operator=(SSP<FlowType,CostType>&& o)
 {
   swap(*this, o);
-  return *this;
+  return *this; 
 }
 
 template <typename FlowType, typename CostType> 
