@@ -197,12 +197,12 @@ namespace MCF {
 
 
     template <typename FlowType, typename CostType> 
-        inline NodeId SSP<FlowType, CostType>::no_nodes() const
+        inline typename SSP<FlowType, CostType>::NodeId SSP<FlowType, CostType>::no_nodes() const
         {
             return nodeNum;
         }
     template <typename FlowType, typename CostType> 
-        inline EdgeId SSP<FlowType, CostType>::no_edges() const
+        inline typename SSP<FlowType, CostType>::EdgeId SSP<FlowType, CostType>::no_edges() const
         {
             return edgeNum;
         }
