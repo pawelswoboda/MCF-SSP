@@ -60,11 +60,13 @@ namespace MCF {
             void SetReverseRCap(EdgeId e, FlowType new_rcap);
             void PushFlow(EdgeId e, FlowType delta);
             void update_cost(EdgeId e, CostType delta);
+            void reset_costs();
 
             // query functions 
             void order() { order_inter_nodes(); order_intra_nodes(); } // reorder arcs so that outgoing ones from given node are ordered consecutively
             NodeId no_nodes() const;
             EdgeId no_edges() const;
+            EdgeId no_arcs() const;
             FlowType flow(const NodeId i, const EdgeId e) const; // get the flow of the e-th edge outgoing out of i
             FlowType flow(const EdgeId e) const; // get the flow of the e-th edge outgoing out of i
             CostType cost(const EdgeId e) const { assert(e >= 0 && e < 2*edgeNum); return arcs[e].cost; }
@@ -76,6 +78,7 @@ namespace MCF {
             std::size_t no_outgoing_arcs(NodeId i) const;
             FlowType upper_bound(EdgeId i) const { assert(arc_valid(&arcs[i])); return capacity[i]; }
             FlowType lower_bound(EdgeId i) const { assert(arc_valid(&arcs[i])); const EdgeId s = arcs[i].sister - arcs; assert(arc_valid(&arcs[s])); return capacity[s]; }
+            CostType potential(NodeId i) const { assert(i<no_nodes()); return nodes[i].pi; }
 
             // debug functions
             bool TestOptimality() const; 
@@ -205,6 +208,11 @@ namespace MCF {
         inline typename SSP<FlowType, CostType>::EdgeId SSP<FlowType, CostType>::no_edges() const
         {
             return edgeNum;
+        }
+    template <typename FlowType, typename CostType> 
+        inline typename SSP<FlowType, CostType>::EdgeId SSP<FlowType, CostType>::no_arcs() const
+        {
+            return 2*edgeNum;
         }
 
     template <typename FlowType, typename CostType> 
@@ -438,6 +446,17 @@ namespace MCF {
 
             if (a->GetRCost() > 0) a = a->sister;
             if (a->r_cap > 0 && a->GetRCost() < 0) PushFlow(a, a->r_cap);
+        }
+
+    template <typename FlowType, typename CostType> 
+        inline void SSP<FlowType, CostType>::reset_costs()
+        {
+           for(EdgeId e=0; e<no_arcs(); ++e) {
+              update_cost(e, -cost(e));
+              assert(arcs[e].cost == 0.0);
+           }
+           mcf_cost = 0.0;
+           assert(objective() == 0.0);
         }
 
     ///////////////////////////////////////
@@ -742,6 +761,7 @@ namespace MCF {
 
             while ( (i=queue.RemoveMin(d)) )
             {
+                assert(i != nullptr);
                 if (i->excess < 0)
                 {
                     FlowType delta = Augment(start, i);
@@ -976,8 +996,9 @@ namespace MCF {
     template <typename FlowType, typename CostType> 
         inline CostType SSP<FlowType, CostType>::solve()
         {
+            assert( 0 == std::accumulate(nodes, nodes+no_nodes(), 0, [](const long int s, const Node& i) { return s + i.excess; }) );
             Node* i;
-            //Init();
+            Init();
             while ( 1 )
             {
                 i = firstActive;
@@ -1055,7 +1076,7 @@ namespace MCF {
                 }
             }
 
-            if(std::abs(objective() - mcf_cost) > 1e-8) {
+            if(std::abs(objective() - mcf_cost)/no_edges() > 1e-8) {
                 return false;
             }
 
