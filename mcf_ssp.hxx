@@ -126,13 +126,13 @@ namespace MCF {
             };
 
             std::size_t		nodeNum, edgeNum, edgeNumMax;
-            Node	*nodes;
-            Arc		*arcs;
-            Node*	firstActive;
+            Node	*nodes = nullptr;
+            Arc		*arcs = nullptr;
+            Node*	firstActive = nullptr;
             std::size_t		counter;
             CostType mcf_cost;
 
-            FlowType* capacity; // original capacities from which one can compute the flows
+            FlowType* capacity = nullptr; // original capacities from which one can compute the flows
 
 
             /////////////////////////////////////////////////////////////////////////
@@ -474,7 +474,8 @@ namespace MCF {
     template <typename FlowType, typename CostType> 
         inline SSP<FlowType, CostType>::PriorityQueue::~PriorityQueue()
         {
-            free(array);
+            if(array)
+                free(array);
         }
 
     template <typename FlowType, typename CostType> 
